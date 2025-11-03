@@ -59,11 +59,12 @@ ai ml bot/
 
 ## How It Works
 
-1. **Query Classification**: Uses ML to categorize user questions (CPU, GPU, RAM, etc.)
+1. **Query Classification**: Uses advanced ML to categorize user questions (CPU, GPU, RAM, etc.)
 2. **Recommendation Engine**: Provides specific hardware recommendations based on category
-3. **Text Processing**: Converts queries to numerical features using TF-IDF vectorization
-4. **Model Training**: Trains a Logistic Regression classifier on query-category pairs
-5. **Interactive Responses**: Gives personalized PC building advice
+3. **Text Processing**: Converts queries to numerical features using TF-IDF vectorization with bigrams
+4. **Model Training**: Trains multiple algorithms (RandomForest, SVM, LogisticRegression, NaiveBayes) with hyperparameter tuning
+5. **Best Model Selection**: Automatically selects the highest-performing model (currently RandomForest at 91.3% accuracy)
+6. **Interactive Responses**: Gives personalized PC building advice
 
 ## Supported Categories
 

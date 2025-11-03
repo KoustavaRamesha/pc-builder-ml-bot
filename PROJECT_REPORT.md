@@ -266,7 +266,9 @@ The project successfully combines modern web technologies (Flask, JavaScript) wi
 
 **Project Status**: ✅ Complete and Functional
 **Technologies**: Python, Flask, JavaScript, scikit-learn, pandas
-**Lines of Code**: ~800 lines across 5 main files
-**Model Accuracy**: 38% classification accuracy
+**Lines of Code**: ~900 lines across 6 main files
+**Model Accuracy**: 91.3% classification accuracy (up from 38%)
+**Training Data**: 230 examples (up from 35)
+**ML Algorithm**: RandomForest with hyperparameter tuning
 **Supported Components**: 60+ hardware items
 **Web Interface**: Fully responsive single-page application

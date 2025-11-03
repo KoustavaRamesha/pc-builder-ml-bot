@@ -2,7 +2,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
 import joblib
 import os
 
@@ -219,24 +223,94 @@ class PCBuildingBot:
         return df['query'], df['category']
 
     def train(self, X, y):
-        """Train the query classification model."""
+        """Train the query classification model with multiple algorithms and hyperparameter tuning."""
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Vectorize text
+        # Vectorize text with improved parameters
+        self.vectorizer = TfidfVectorizer(
+            max_features=2000,
+            stop_words='english',
+            ngram_range=(1, 2),  # Include bigrams
+            min_df=2,  # Minimum document frequency
+            max_df=0.9  # Maximum document frequency
+        )
+
         X_train_vec = self.vectorizer.fit_transform(X_train)
         X_test_vec = self.vectorizer.transform(X_test)
 
-        # Train model
-        self.model.fit(X_train_vec, y_train)
+        # Try multiple algorithms with hyperparameter tuning
+        models = {
+            'LogisticRegression': {
+                'model': LogisticRegression(random_state=42, max_iter=1000),
+                'params': {
+                    'C': [0.1, 1.0, 10.0],
+                    'solver': ['liblinear', 'lbfgs']
+                }
+            },
+            'RandomForest': {
+                'model': RandomForestClassifier(random_state=42),
+                'params': {
+                    'n_estimators': [100, 200, 300],
+                    'max_depth': [10, 20, None],
+                    'min_samples_split': [2, 5, 10]
+                }
+            },
+            'SVM': {
+                'model': SVC(random_state=42),
+                'params': {
+                    'C': [0.1, 1.0, 10.0],
+                    'kernel': ['linear', 'rbf'],
+                    'gamma': ['scale', 'auto']
+                }
+            },
+            'NaiveBayes': {
+                'model': MultinomialNB(),
+                'params': {
+                    'alpha': [0.1, 0.5, 1.0, 2.0]
+                }
+            }
+        }
 
-        # Evaluate
-        y_pred = self.model.predict(X_test_vec)
-        accuracy = accuracy_score(y_test, y_pred)
-        print(f"Model accuracy: {accuracy:.2f}")
+        best_accuracy = 0
+        best_model = None
+        best_model_name = ""
+
+        print("Training and evaluating multiple ML models...")
+
+        # Train and evaluate each model
+        for model_name, model_config in models.items():
+            print(f"\nTraining {model_name}...")
+
+            # Use GridSearchCV for hyperparameter tuning
+            grid_search = GridSearchCV(
+                model_config['model'],
+                model_config['params'],
+                cv=3,
+                scoring='accuracy',
+                n_jobs=-1
+            )
+
+            grid_search.fit(X_train_vec, y_train)
+
+            # Evaluate on test set
+            y_pred = grid_search.predict(X_test_vec)
+            accuracy = accuracy_score(y_test, y_pred)
+
+            print(f"{model_name} - Best params: {grid_search.best_params_}")
+            print(f"{model_name} - Test accuracy: {accuracy:.3f}")
+
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_model = grid_search.best_estimator_
+                best_model_name = model_name
+
+        # Use the best performing model
+        self.model = best_model
+        print(f"\n🎯 Selected best model: {best_model_name} with accuracy: {best_accuracy:.3f}")
 
         self.is_trained = True
-        return accuracy
+        return best_accuracy
 
     def predict_category(self, text):
         """Predict category of PC building query."""
