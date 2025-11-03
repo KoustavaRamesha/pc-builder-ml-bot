@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Building Assistant Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot {
+            background: white;
+            border: 1px solid #e9ecef;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .message.educational {
+            border-left: 4px solid #28a745;
+        }
+
+        .message .icon {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .build-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 2px solid #007bff;
+            animation: slideIn 0.3s ease-in;
+        }
+
+        .build-form h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: #007bff;
+        }
+
+        .chat-input button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chat-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .typing {
+            display: none;
+            padding: 15px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            margin-right: auto;
+            max-width: 70%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .typing.show {
+            display: block;
+        }
+
+        .typing .loading {
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                height: 95vh;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ PC Building Assistant</h1>
+            <p>Ask me about PC components, builds, or recommendations!</p>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="icon">🤖</div>
+                    <div>Hello! I'm your PC Building Assistant. You can ask me about PC components, get build recommendations, or use the interactive PC builder. Try asking "help me build a pc" or "what is a CPU?"</div>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Ask me about PC components or builds..." autocomplete="off">
+                <button id="sendButton">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        let buildFormVisible = false;
+
+        function addMessage(content, type = 'bot', category = '') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type} ${category}`;
+
+            let icon = type === 'user' ? '👤' : '🤖';
+            if (category === 'educational') {
+                icon = '📚';
+            }
+
+            messageDiv.innerHTML = `
+                <div class="icon">${icon}</div>
+                <div>${content.replace(/\n/g, '<br>')}</div>
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot typing show';
+            typingDiv.innerHTML = `
+                <div class="icon">🤖</div>
+                <div><span class="loading"></span>Thinking...</div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return typingDiv;
+        }
+
+        function hideTyping(typingDiv) {
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        function showBuildForm() {
+            if (buildFormVisible) return;
+
+            const formDiv = document.createElement('div');
+            formDiv.className = 'message bot build-form';
+            formDiv.innerHTML = `
+                <h3>🛠️ Custom PC Builder</h3>
+                <div class="form-group">
+                    <label for="budget">Budget (USD):</label>
+                    <input type="number" id="budget" placeholder="e.g., 1000" min="200" max="10000">
+                </div>
+                <div class="form-group">
+                    <label for="useCase">Primary Use Case:</label>
+                    <select id="useCase">
+                        <option value="">Select use case...</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="office">Office/Productivity</option>
+                        <option value="video editing">Video Editing/Content Creation</option>
+                        <option value="workstation">Professional Workstation</option>
+                    </select>
+                </div>
+                <button class="btn" id="buildButton">Build My PC!</button>
+            `;
+
+            chatMessages.appendChild(formDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            buildFormVisible = true;
+
+            // Add event listener to build button
+            document.getElementById('buildButton').addEventListener('click', buildPC);
+        }
+
+        async function buildPC() {
+            const budget = document.getElementById('budget').value;
+            const useCase = document.getElementById('useCase').value;
+
+            console.log('Budget:', budget, 'Use case:', useCase); // Debug logging
+
+            if (!budget || !useCase || budget === '' || useCase === '') {
+                addMessage('Please fill in both budget and use case.', 'bot');
+                return;
+            }
+
+            const buildButton = document.getElementById('buildButton');
+            buildButton.disabled = true;
+            buildButton.textContent = 'Building...';
+
+            try {
+                const response = await fetch('/build_pc', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ budget, useCase }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage(data.build, 'bot');
+                    // Hide build form after successful build
+                    const formDiv = document.querySelector('.build-form');
+                    if (formDiv) {
+                        formDiv.style.display = 'none';
+                        buildFormVisible = false;
+                    }
+                } else {
+                    addMessage(`Error: ${data.error}`, 'bot');
+                }
+            } catch (error) {
+                addMessage('Sorry, there was an error building your PC. Please try again.', 'bot');
+            } finally {
+                buildButton.disabled = false;
+                buildButton.textContent = 'Build My PC!';
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            messageInput.value = '';
+
+            const typingDiv = showTyping();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+                hideTyping(typingDiv);
+
+                if (data.show_build_form) {
+                    addMessage(data.response, 'bot');
+                    showBuildForm();
+                } else {
+                    addMessage(data.response, 'bot', data.category);
+                }
+            } catch (error) {
+                hideTyping(typingDiv);
+                addMessage('Sorry, there was an error processing your message. Please try again.', 'bot');
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Focus input on load
+        messageInput.focus();
+    </script>
+</body>
+</html>
