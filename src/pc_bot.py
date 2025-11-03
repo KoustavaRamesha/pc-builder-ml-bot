@@ -324,7 +324,10 @@ class PCBuildingBot:
     def get_recommendation(self, category, user_input=""):
         """Get PC building recommendation for a category."""
         # Check if user wants to build a PC - start interactive mode
-        if "build" in user_input.lower() and ("pc" in user_input.lower() or "computer" in user_input.lower()):
+        user_lower = user_input.lower()
+        if ("build" in user_lower and ("pc" in user_lower or "computer" in user_lower)) or \
+           ("build" in user_lower and "again" in user_lower) or \
+           user_lower in ["build pc", "build a pc", "build me a pc", "help me build", "i want to build"]:
             return "INTERACTIVE_BUILD"
 
         # Check if user is asking educational questions
@@ -373,127 +376,106 @@ class PCBuildingBot:
             return "I'm not sure about that component. Could you be more specific about what you're looking for?"
 
     def build_custom_pc(self, budget=None, use_case=None):
-        """Build a custom PC based on budget and use case with strict budget constraints."""
+        """Build a custom PC with cost as close as possible to the specified budget using optimization."""
         if budget is None or use_case is None:
             return None
 
-        # Calculate component budget allocation (leave ~10% buffer for taxes/shipping)
-        available_budget = budget * 0.9
+        # Generate multiple component combinations and find the one closest to budget
+        best_build = None
+        best_difference = float('inf')
 
-        # Determine CPU platform (AMD vs Intel) and RAM type for compatibility
+        # Define component options based on use case
         if use_case.lower() == 'gaming':
-            if budget < 400:
-                # Ultra-budget: APU or basic CPU with integrated graphics
-                cpu_key = 'ultra_budget'  # AMD Ryzen 5 5600G $159
-                gpu_key = None  # Integrated graphics
-                ram_key = 'ultra_budget'  # 8GB DDR4 $29
-                mobo_key = 'budget_amd'  # ASRock B450M PRO4 $79
-                storage_key = 'budget_ssd'  # Crucial MX500 500GB $49
-                build_name = f"Ultra-Budget Gaming PC (~${budget})"
-            elif budget < 600:
-                # Budget: Basic gaming setup
-                cpu_key = 'budget'  # AMD Ryzen 5 5600 $129
-                gpu_key = 'ultra_budget'  # GTX 1650 $149
-                ram_key = 'budget'  # 16GB DDR4 $59
-                mobo_key = 'budget_amd'  # ASRock B450M PRO4 $79
-                storage_key = 'budget_ssd'  # Crucial MX500 500GB $49
-                build_name = f"Budget Gaming PC (~${budget})"
-            elif budget < 900:
-                # Entry gaming: Better GPU
-                cpu_key = 'budget'  # AMD Ryzen 5 5600 $129
-                gpu_key = 'budget'  # RTX 4060 $299
-                ram_key = 'budget'  # 16GB DDR4 $59
-                mobo_key = 'budget_amd'  # ASRock B450M PRO4 $79
-                storage_key = 'budget_ssd'  # Crucial MX500 500GB $49
-                build_name = f"Entry Gaming PC (~${budget})"
-            elif budget < 1300:
-                # Mid-range: Better CPU and GPU
-                cpu_key = 'gaming'  # AMD Ryzen 5 7600X $299
-                gpu_key = 'mid'  # RTX 4070 $599
-                ram_key = 'gaming'  # 16GB DDR5 $79
-                mobo_key = 'amd'  # MSI MAG B650 $199
-                storage_key = 'primary'  # Samsung 980 Pro 1TB $89
-                build_name = f"Mid-Range Gaming PC (~${budget})"
-            else:
-                # High-end: Premium components
-                cpu_key = 'high_end_gaming'  # AMD Ryzen 7 7700X $399
-                gpu_key = 'high_end'  # RTX 4070 Ti $799
-                ram_key = 'productivity'  # 32GB DDR4 $109
-                mobo_key = 'amd'  # MSI MAG B650 $199
-                storage_key = 'primary'  # Samsung 980 Pro 1TB $89
-                build_name = f"High-End Gaming PC (~${budget})"
-
+            cpu_options = ['cheap_intel', 'budget_intel', 'entry_gaming', 'gaming', 'high_end_gaming']
+            gpu_options = ['ultra_budget', 'budget', 'mid', 'high_end']
+            ram_options = ['budget', 'gaming', 'productivity']
+            storage_options = ['budget_ssd', 'primary']
         elif use_case.lower() == 'office' or use_case.lower() == 'work':
-            if budget < 400:
-                # Basic office: Minimal setup
-                cpu_key = 'cheap_intel'  # Intel i3-12100F $109
-                gpu_key = None  # Integrated graphics
-                ram_key = 'ultra_budget'  # 8GB DDR4 $29
-                mobo_key = 'budget_intel'  # ASRock B660M-HDV $89
-                storage_key = 'budget_hdd'  # Seagate 1TB HDD $39
-                build_name = f"Basic Office PC (~${budget})"
-            else:
-                # Standard office: Better performance
-                cpu_key = 'budget_intel'  # Intel i5-12400F $149
-                gpu_key = None  # Integrated graphics
-                ram_key = 'budget'  # 16GB DDR4 $59
-                mobo_key = 'budget_intel'  # ASRock B660M-HDV $89
-                storage_key = 'primary'  # Samsung 980 Pro 1TB $89
-                build_name = f"Office/Productivity PC (~${budget})"
+            cpu_options = ['cheap_intel', 'budget_intel']
+            gpu_options = ['integrated']  # No discrete GPU
+            ram_options = ['budget', 'gaming', 'productivity', 'high_end']
+            storage_options = ['budget_ssd', 'primary', 'fast_ssd']
+        else:  # workstation
+            cpu_options = ['budget', 'gaming', 'high_end_gaming']
+            gpu_options = ['ultra_budget', 'budget', 'mid', 'high_end']
+            ram_options = ['gaming', 'productivity', 'high_end', 'workstation']
+            storage_options = ['primary', 'fast_ssd', 'workstation_ssd']
 
-        elif use_case.lower() in ['video editing', 'content creation', 'workstation']:
-            if budget < 1000:
-                # Entry workstation
-                cpu_key = 'budget'  # AMD Ryzen 5 5600 $129
-                gpu_key = 'budget'  # RTX 4060 $299
-                ram_key = 'gaming'  # 16GB DDR5 $79
-                mobo_key = 'budget_amd'  # ASRock B450M PRO4 $79
-                storage_key = 'primary'  # Samsung 980 Pro 1TB $89
-            elif budget < 1500:
-                # Mid workstation
-                cpu_key = 'gaming'  # AMD Ryzen 5 7600X $299
-                gpu_key = 'mid'  # RTX 4070 $599
-                ram_key = 'productivity'  # 32GB DDR4 $109
-                mobo_key = 'amd'  # MSI MAG B650 $199
-                storage_key = 'primary'  # Samsung 980 Pro 1TB $89
-            else:
-                # High-end workstation
-                cpu_key = 'high_end_gaming'  # AMD Ryzen 7 7700X $399
-                gpu_key = 'enthusiast'  # RTX 4080 $1199
-                ram_key = 'workstation'  # 64GB DDR4 $199
-                mobo_key = 'amd'  # MSI MAG B650 $199
-                storage_key = 'workstation_ssd'  # Samsung 980 Pro 2TB $169
-            build_name = f"Content Creation Workstation (~${budget})"
+        # Try different component combinations
+        for cpu_key in cpu_options:
+            for gpu_key in gpu_options:
+                for ram_key in ram_options:
+                    for storage_key in storage_options:
 
-        else:  # Default gaming build
-            cpu_key = 'gaming'
-            gpu_key = 'mid'
-            ram_key = 'gaming'
-            mobo_key = 'amd'
-            storage_key = 'primary'
+                        # Select components
+                        selected = {}
+
+                        # CPU
+                        selected['cpu'] = self.components['cpu'][cpu_key]
+
+                        # GPU
+                        if gpu_key == 'integrated':
+                            selected['gpu'] = {'name': 'Integrated Graphics', 'price': 0}
+                        else:
+                            selected['gpu'] = self.components['gpu'][gpu_key]
+
+                        # RAM
+                        selected['ram'] = self.components['ram'][ram_key]
+
+                        # Motherboard (must match CPU)
+                        cpu_name = selected['cpu']['name']
+                        if 'Intel' in cpu_name:
+                            selected['motherboard'] = self.components['motherboard']['budget_intel']
+                        else:
+                            selected['motherboard'] = self.components['motherboard']['budget_amd']
+
+                        # Storage
+                        selected['storage'] = self.components['storage'][storage_key]
+
+                        # PSU (based on GPU)
+                        gpu_name = selected['gpu']['name']
+                        if 'RTX 4080' in gpu_name or 'RTX 4090' in gpu_name or 'RX 7900' in gpu_name:
+                            selected['psu'] = self.components['psu']['850w']
+                        elif 'RTX 4070' in gpu_name or 'RX 7800' in gpu_name:
+                            selected['psu'] = self.components['psu']['750w']
+                        else:
+                            selected['psu'] = self.components['psu']['650w']
+
+                        # Case and Cooler (always budget)
+                        selected['case'] = self.components['case']['budget']
+                        selected['cooler'] = self.components['cooler']['budget']
+
+                        # Calculate total cost
+                        total_cost = sum(comp['price'] for comp in selected.values())
+
+                        # Check if this is closer to budget than previous best
+                        difference = abs(total_cost - budget)
+                        if difference < best_difference:
+                            best_difference = difference
+                            best_build = selected.copy()
+
+                            # If we found an exact match, return immediately
+                            if total_cost == budget:
+                                break
+
+                    if best_difference == 0:  # Exact match found
+                        break
+                if best_difference == 0:
+                    break
+            if best_difference == 0:
+                break
+
+        # Generate build name
+        if use_case.lower() == 'gaming':
             build_name = f"Custom Gaming PC (~${budget})"
-
-        # Build the PC configuration with compatibility ensured
-        pc_config = {
-            'cpu': self.components['cpu'][cpu_key],
-            'gpu': self.components['gpu'][gpu_key] if gpu_key else {'name': 'Integrated Graphics', 'price': 0},
-            'ram': self.components['ram'][ram_key],
-            'motherboard': self.components['motherboard'][mobo_key],
-            'psu': self.components['psu']['650w'],
-            'case': self.components['case']['budget'],
-            'cooler': self.components['cooler']['budget'],
-            'storage': self.components['storage'][storage_key]
-        }
-
-        # Adjust PSU based on GPU power requirements
-        if gpu_key and gpu_key in ['enthusiast', 'professional']:
-            pc_config['psu'] = self.components['psu']['850w']
-        elif gpu_key and gpu_key in ['mid', 'high_end']:
-            pc_config['psu'] = self.components['psu']['750w']
+        elif use_case.lower() == 'office' or use_case.lower() == 'work':
+            build_name = f"Office/Productivity PC (~${budget})"
+        else:
+            build_name = f"Content Creation Workstation (~${budget})"
 
         return {
             'name': build_name,
-            'components': pc_config
+            'components': best_build
         }
 
     def save_model(self, model_path='models/pc_bot_model.pkl', vectorizer_path='models/pc_bot_vectorizer.pkl'):

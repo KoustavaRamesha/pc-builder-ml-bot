@@ -322,7 +322,11 @@
         }
 
         function showBuildForm() {
-            if (buildFormVisible) return;
+            // Remove any existing build form first
+            const existingForm = document.querySelector('.build-form');
+            if (existingForm) {
+                existingForm.remove();
+            }
 
             const formDiv = document.createElement('div');
             formDiv.className = 'message bot build-form';
@@ -349,8 +353,9 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
             buildFormVisible = true;
 
-            // Add event listener to build button
-            document.getElementById('buildButton').addEventListener('click', buildPC);
+            // Add event listener to build button (remove any existing ones first)
+            const buildButton = document.getElementById('buildButton');
+            buildButton.addEventListener('click', buildPC);
         }
 
         async function buildPC() {
@@ -402,6 +407,13 @@
             const message = messageInput.value.trim();
             if (!message) return;
 
+            // If build form is visible, treat chat messages as build form inputs
+            if (buildFormVisible) {
+                handleBuildFormInput(message);
+                messageInput.value = '';
+                return;
+            }
+
             addMessage(message, 'user');
             messageInput.value = '';
 
@@ -429,6 +441,54 @@
                 hideTyping(typingDiv);
                 addMessage('Sorry, there was an error processing your message. Please try again.', 'bot');
             }
+        }
+
+        function handleBuildFormInput(message) {
+            // Try to parse the message as budget or use case
+            const lowerMessage = message.toLowerCase().trim();
+
+            // Check if it's a budget (number)
+            const budgetMatch = message.match(/^\d+$/);
+            if (budgetMatch) {
+                const budget = parseInt(budgetMatch[0]);
+                if (budget >= 200 && budget <= 10000) {
+                    document.getElementById('budget').value = budget;
+                    addMessage(`Budget set to $${budget}`, 'user');
+                    addMessage('Now select your use case from the dropdown above!', 'bot');
+                    return;
+                }
+            }
+
+            // Check if it's a use case
+            const useCases = {
+                'gaming': 'gaming',
+                'game': 'gaming',
+                'games': 'gaming',
+                'office': 'office',
+                'work': 'office',
+                'productivity': 'office',
+                'video editing': 'video editing',
+                'content creation': 'video editing',
+                'editing': 'video editing',
+                'workstation': 'workstation',
+                'professional': 'workstation'
+            };
+
+            for (const [keyword, useCase] of Object.entries(useCases)) {
+                if (lowerMessage.includes(keyword)) {
+                    document.getElementById('useCase').value = useCase;
+                    addMessage(`Use case set to: ${useCase}`, 'user');
+
+                    // Auto-submit the form
+                    setTimeout(() => {
+                        buildPC();
+                    }, 500);
+                    return;
+                }
+            }
+
+            // If we can't parse it, show help
+            addMessage(`I didn't understand "${message}". Please enter a budget (like "800") or select a use case from the dropdown.`, 'bot');
         }
 
         // Event listeners

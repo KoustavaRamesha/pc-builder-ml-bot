@@ -95,11 +95,13 @@ ai ml bot/
 
 ## Special Features
 
-- **Interactive PC Building**: Ask "help me build a pc" to get personalized recommendations
+- **Interactive PC Building**: Ask "help me build a pc", "build a pc again", or "build pc" to get personalized recommendations
+- **Budget-Conscious Builds**: Uses smart allocation to stay within your specified budget (±$50-100)
 - **Component Compatibility**: All components are compatible (CPU/motherboard socket, RAM type, etc.)
 - **Educational Responses**: Ask "what is a CPU?" or "why do I need RAM?" for explanations
 - **Fun Facts**: Each component explanation includes an interesting computer history fact
 - **Total Cost Calculation**: Complete builds show individual prices and grand total
+- **Multiple Build Sessions**: Build as many PCs as you want in the same session
 
 ## Customization
 
